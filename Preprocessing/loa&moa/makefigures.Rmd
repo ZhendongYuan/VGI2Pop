@@ -1,0 +1,409 @@
+---
+title: "makefigures"
+author: "zhendong yuan"
+date: "2019/11/18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("tmap")
+library("rgdal")
+library("sp")
+```
+# for ULB
+#read dataset sbl
+```{r}
+ULB_sbl_2 <- get(load("/home/z/zhendong/london/ULB_ATLAS/predicted_adj_sbl_2.Rdata"))
+ULB_sbl_2$pred_sbl_pop[is.na(ULB_sbl_2$pred_sbl_pop)] <- 0
+summary(ULB_sbl_2$pred_sbl_pop)
+```
+
+# the SBL
+```{r}
+sbl_ULB_cuts <-  c(0, 50, 100, 150, 200, 266)
+tm_shape(ULB_sbl_2) +
+  tm_polygons("pred_sbl_pop",
+              breaks = sbl_ULB_cuts,
+   # style  = "jenks",
+    palette = "Blues", 
+    border.col = "white", 
+    border.alpha = 0.5,
+  title = "Predicted population") +
+  tm_legend(legend.position = c("left", "bottom"))+
+  tm_layout(title = "predicted population on street-block level",
+    title.size = 1,
+    title.position = c("center", "top"))+ 
+    tm_layout(inner.margins = c(0.08, 0.10, 0.10, 0.03))+
+    tm_scale_bar(color.dark = "gray60", position = c("right", "bottom")) + 
+    tm_compass(size = 2.5, fontsize = 0.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top"))
+```
+
+
+# the loa 
+```{r}
+ULB_sbl_2_loa <- readOGR("/home/z/zhendong/london/ULB_ATLAS/predicted_adj_sbl_loa_adapted_2.shp")
+summary(ULB_sbl_2_loa$prd_l_p)
+```
+
+```{r}
+cuts <- c(0, 1500, 2000, 2500, 4500, 36341)
+# 
+tm_shape(ULB_sbl_2_loa) +
+  tm_polygons("prd_l_p",
+    breaks = cuts,
+    palette = "Blues", 
+    border.col = "white", 
+    border.alpha = 0.5,
+    title = "Predicted population") +
+  tm_legend(legend.position = c("left", "bottom"))+
+  tm_layout(title = "Aggregated predictions on LOA level",
+    title.size = 1,
+    title.position = c("center", "top"))+ 
+    tm_layout(inner.margins = c(0.08, 0.10, 0.10, 0.03))+
+    tm_scale_bar(color.dark = "gray60", position = c("right", "bottom")) + 
+    tm_compass(size = 2.5, fontsize = 0.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top"))
+```
+# error in percentage
+```{r}
+summary(ULB_sbl_2_loa$residul)
+ULB_sbl_2_loa$residul_p = ULB_sbl_2_loa$residul/ULB_sbl_2_loa$l_tr_pp
+summary(ULB_sbl_2_loa$residul_p)
+```
+```{r}
+mycols <- c("#00994C", "#CCFF99", "#FFFFFF", "#FFCC99", "#FF0000")
+cuts_residual = c(-25, -0.5, -0.1, 0.1, 0.5, 1)
+tm_shape(ULB_sbl_2_loa) +
+  tm_polygons("residul_p",
+    breaks = cuts_residual,
+    #style  = "quantile",
+    palette = mycols, 
+    border.col = "white", 
+    border.alpha = 0.5,
+    title = "%residual") +
+  tm_legend(legend.position = c("left", "bottom"))+
+  tm_layout(title = "Residual in percentage",
+    title.size = 1,
+    title.position = c("center", "top"))+ 
+    tm_layout(inner.margins = c(0.08, 0.10, 0.10, 0.03))+
+    tm_scale_bar(color.dark = "gray60", position = c("right", "bottom")) + 
+    tm_compass(size = 2.5, fontsize = 0.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top"))
+```
+
+# error in percentage
+```{r echo=false}
+cuts_residual = c(-25, -0.5, -0.1, 0.1, 0.5, 1)
+tmap_mode("plot")
+tm_shape(ULB_sbl_2_loa) + tm_bubbles(size = "residul_p",col = "residul_p", breaks = cuts_residual)
+```
+
+
+#############  NEED TO spend time here.
+## result from the multi-class 
+#read dataset sbl
+```{r}
+multi_sbl <- get(load("/data/zhendongBackup/london/multiclassdsymetric/result_sbl.Rdata"))
+multi_sbl$final_pop[is.na(multi_sbl$final_pop)] <- 0
+summary(multi_sbl$final_pop)
+```
+
+
+# the SBL
+```{r}
+sbl_multi_cuts <- c(0, 50, 100, 150, 200, 20451)
+tm_shape(multi_sbl) +
+  tm_polygons("final_pop",
+              breaks = sbl_multi_cuts,
+  # style  = "jenks",
+    palette = "Blues", 
+    border.col = "white", 
+    border.alpha = 0.5,
+  title = "Predicted population") +
+  tm_legend(legend.position = c("left", "bottom"))+
+  tm_layout(title = "predicted population on street-block level",
+    title.size = 1,
+    title.position = c("center", "top"))+ 
+    tm_layout(inner.margins = c(0.08, 0.10, 0.10, 0.03))+
+    tm_scale_bar(color.dark = "gray60", position = c("right", "bottom")) + 
+    tm_compass(size = 2.5, fontsize = 0.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top"))
+```
+
+
+# the loa 
+```{r}
+multi_loa <- get(load("/home/z/zhendong/london/multiclassdsymetric/london_low_output.Rdata"))
+summary(multi_loa$LOA_pred_pop_2)
+```
+
+```{r}
+cuts <- c(0, 1500, 2000, 2500, 4500, 37528 )
+# 
+tm_shape(multi_loa) +
+  tm_polygons("LOA_pred_pop_2",
+    breaks = cuts,
+    palette = "Blues", 
+    border.col = "white", 
+    border.alpha = 0.5,
+    title = "Predicted population") +
+  tm_legend(legend.position = c("left", "bottom"))+
+  tm_layout(title = "Aggregated predictions on LOA level",
+    title.size = 1,
+    title.position = c("center", "top"))+ 
+    tm_layout(inner.margins = c(0.08, 0.10, 0.10, 0.03))+
+    tm_scale_bar(color.dark = "gray60", position = c("right", "bottom")) + 
+    tm_compass(size = 2.5, fontsize = 0.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top"))
+```
+# error in percentage
+```{r}
+multi_loa$residul=  multi_loa$population-multi_loa$LOA_pred_pop_2
+summary(multi_loa$residul)
+multi_loa$residul_p = multi_loa$residul/multi_loa$population
+summary(multi_loa$residul_p)
+```
+```{r}
+mycols <- c("#00994C", "#CCFF99", "#FFFFFF", "#FFCC99", "#FF0000")
+cuts_residual = c(-31, -0.5, -0.1, 0.1, 0.5, 2)
+tm_shape(multi_loa) +
+  tm_polygons("residul_p",
+    breaks = cuts_residual,
+    #style  = "quantile",
+    palette = mycols, 
+    border.col = "white", 
+    border.alpha = 0.5,
+    title = "%residual") +
+  tm_legend(legend.position = c("left", "bottom"))+
+  tm_layout(title = "Residual in percentage",
+    title.size = 1,
+    title.position = c("center", "top"))+ 
+    tm_layout(inner.margins = c(0.08, 0.10, 0.10, 0.03))+
+    tm_scale_bar(color.dark = "gray60", position = c("right", "bottom")) + 
+    tm_compass(size = 2.5, fontsize = 0.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top"))
+```
+
+# error in percentage
+```{r}
+cuts_residual = c(-25, -0.5, -0.1, 0.1, 0.5, 1)
+tmap_mode("plot")
+tm_shape(ULB_sbl_2_loa) + tm_bubbles(size = "residul_p",col = "residul_p", breaks = cuts_residual)
+```
+
+
+## for our propsoed model
+```{r}
+our_sbl <- get(load("/home/z/zhendong/london/enriched_feature/moa2sbl/predicted_adj_sbl.Rdata"))
+summary(our_sbl$prd_dj_)
+our_sbl_2_loa <- get(load("/home/z/zhendong/london/enriched_feature/moa2sbl/sbl_predicted_adj_loa.Rdata"))
+summary(our_sbl_2_loa$prd_l_p)
+```
+# save as Rdata to release space.
+```{r echo=False}
+our_sbl <- readOGR("/home/z/zhendong/london/enriched_feature/moa2sbl/predicted_adj_sbl.shp")
+our_sbl_2_loa <- readOGR("/home/z/zhendong/london/enriched_feature/moa2sbl/sbl_predicted_adj_loa.shp")
+save(our_sbl, file="/home/z/zhendong/london/enriched_feature/moa2sbl/predicted_adj_sbl.Rdata")
+save(our_sbl_2_loa, file="/home/z/zhendong/london/enriched_feature/moa2sbl/sbl_predicted_adj_loa.Rdata")
+```
+
+
+# plot the SBL
+```{r}
+our_sbl_cuts <- c(0, 50, 100, 150, 200, 504)
+tm_shape(our_sbl) +
+  tm_polygons("prd_dj_",
+              breaks = our_sbl_cuts,
+    #style  = "jenks",
+    palette = "Blues", 
+    border.col = "white", 
+    border.alpha = 0.5,
+  title = "Predicted population") +
+  tm_legend(legend.position = c("left", "bottom"))+
+  tm_layout(title = "predicted population on street-block level",
+    title.size = 1,
+    title.position = c("center", "top"))+ 
+    tm_layout(inner.margins = c(0.08, 0.10, 0.10, 0.03))+
+    tm_scale_bar(color.dark = "gray60", position = c("right", "bottom")) + 
+    tm_compass(size = 2.5, fontsize = 0.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top"))
+```
+
+
+# the loa 
+```{r}
+summary(our_sbl_2_loa$prd_l_p)
+```
+
+```{r}
+cuts <- c(0, 1500, 2000, 2500, 4500, 9450)
+# 
+tm_shape(our_sbl_2_loa) +
+  tm_polygons("prd_l_p",
+    breaks = cuts,
+    palette = "Blues", 
+    border.col = "white", 
+    border.alpha = 0.5,
+    title = "Predicted population") +
+  tm_legend(legend.position = c("left", "bottom"))+
+  tm_layout(title = "Aggregated predictions on LOA level",
+    title.size = 1,
+    title.position = c("center", "top"))+ 
+    tm_layout(inner.margins = c(0.08, 0.10, 0.10, 0.03))+
+    tm_scale_bar(color.dark = "gray60", position = c("right", "bottom")) + 
+    tm_compass(size = 2.5, fontsize = 0.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top"))
+```
+# plot the reference data
+```{r}
+summary(our_sbl_2_loa$l_tr_pp)
+```
+
+```{r}
+cuts <- c(0, 1500, 2000, 2500, 4500, 9349 )
+# 
+tm_shape(our_sbl_2_loa) +
+  tm_polygons("l_tr_pp",
+    breaks = cuts,
+    palette = "Blues", 
+    border.col = "white", 
+    border.alpha = 0.5,
+    title = "Reference population") +
+  tm_legend(legend.position = c("left", "bottom"))+
+  tm_layout(title = "Reference population on LOA level",
+    title.size = 1,
+    title.position = c("center", "top"))+ 
+    tm_layout(inner.margins = c(0.08, 0.10, 0.10, 0.03))+
+    tm_scale_bar(color.dark = "gray60", position = c("right", "bottom")) + 
+    tm_compass(size = 2.5, fontsize = 0.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top"))
+```
+
+
+
+# error in percentage
+```{r}
+summary(our_sbl_2_loa$residul)
+our_sbl_2_loa$residul_p = our_sbl_2_loa$residul/our_sbl_2_loa$l_tr_pp
+summary(our_sbl_2_loa$residul_p)
+```
+```{r}
+mycols <- c("#00994C", "#CCFF99", "#FFFFFF", "#FFCC99", "#FF0000")
+cuts_residual = c(-4, -0.5, -0.1, 0.1, 0.5, 1)
+tm_shape(our_sbl_2_loa) +
+  tm_polygons("residul_p",
+    breaks = cuts_residual,
+    #style  = "quantile",
+    palette = mycols, 
+    border.col = "white", 
+    border.alpha = 0.5,
+    title = "%residual") +
+  tm_legend(legend.position = c("left", "bottom"))+
+  tm_layout(title = "Residual in percentage",
+    title.size = 1,
+    title.position = c("center", "top"))+ 
+    tm_layout(inner.margins = c(0.08, 0.10, 0.10, 0.03))+
+    tm_scale_bar(color.dark = "gray60", position = c("right", "bottom")) + 
+    tm_compass(size = 2.5, fontsize = 0.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top"))
+```
+
+# error in percentage
+```{r echo=false}
+cuts_residual = c(-25, -0.5, -0.1, 0.1, 0.5, 1)
+tmap_mode("plot")
+tm_shape(our_sbl_2_loa) + tm_bubbles(size = "residul_p",col = "residul_p", breaks = cuts_residual)
+```
+
+# PLOT DENSITY sbl
+```{r}
+plot(density(our_sbl$prd_dj_),ylim = c(0,0.05), xlim = c(0,500),col = "deeppink",lwd = 2.5,main= "Distribution of prediction on target level")
+lines(density(ULB_sbl_2$pred_sbl_pop), col= "green",lwd = 2.5)
+lines(density(multi_sbl$final_pop),col = "blue",lwd = 2.5)
+# Add a legend
+legend("topright", 
+  legend = c("Proposed framework", "LULC-RF" , "Multi-class"), 
+  col = c("deeppink","green","blue"), 
+  lty  = 1, 
+ bty = "n", 
+ lwd = 2,
+  #pt.cex = 2.5, 
+  cex = 1, 
+  text.col = "black", 
+  horiz = F , 
+  #inset = c(0.05, 0.05)
+ )
+```
+
+
+# PLOT DENSITY loa
+```{r}
+plot(density(our_sbl_2_loa$l_tr_pp),lwd = 2.5,main= "Distribution of prediction on LOA")
+lines(density(our_sbl_2_loa$prd_l_p),col = "deeppink",lwd = 2.5)
+lines(density(ULB_sbl_2_loa$prd_l_p), col= "green",lwd = 2.5)
+lines(density(multi_loa$LOA_pred_pop_2),col = "blue",lwd = 2.5)
+# Add a legend
+legend("topright", 
+  legend = c("Reference population","Proposed framework", "LULC-RF" , "Multi-class"), 
+  col = c("black","deeppink","green","blue"), 
+  lty  = 1, 
+ bty = "n", 
+ lwd = 2,
+  #pt.cex = 2.5, 
+  cex = 1, 
+  text.col = "black", 
+  horiz = F , 
+  #inset = c(0.05, 0.05)
+ )
+```
+
+
+```{r}
+plot(density(our_sbl_2_loa$residul_p),col = "deeppink",lwd = 2.5, xlim = c(-5,1.5),main= "Distribution of residual in percentage (%) on LOA")
+lines(density(ULB_sbl_2_loa$residul_p), col= "green",lwd = 2.5)
+lines(density(multi_loa$residul_p),col = "blue",lwd = 2.5)
+# Add a legend
+legend("topleft", 
+  legend = c("Proposed framework", "LULC-RF" , "Multi-class"), 
+  col = c("deeppink","green","blue"), 
+  lty  = 1, 
+ bty = "n", 
+ lwd = 2,
+  #pt.cex = 2.5, 
+  cex = 1, 
+  text.col = "black", 
+  horiz = F , 
+  #inset = c(0.05, 0.05)
+ )
+```
+
+```{r}
+plot(density(our_sbl_2_loa$residul),col = "deeppink",lwd = 2.5,main= "Distribution of residual on LOA")
+lines(density(ULB_sbl_2_loa$residul), col= "green",lwd = 2.5)
+lines(density(multi_loa$residul),col = "blue",lwd = 2.5)
+# Add a legend
+legend("topleft", 
+  legend = c("Proposed framework", "LULC-RF" , "Multi-class"), 
+  col = c("deeppink","green","blue"), 
+  lty  = 1, 
+ bty = "n", 
+ lwd = 2,
+  #pt.cex = 2.5, 
+  cex = 1, 
+  text.col = "black", 
+  horiz = F , 
+  #inset = c(0.05, 0.05)
+ )
+```

@@ -1,0 +1,61 @@
+---
+title: "tweets_EDA"
+output: html_document
+---
+
+```{r setup, results='hide', message=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("mongolite")
+require("ggplot2")
+```
+
+
+```{r mongo_agregate}
+my_collection = mongo(collection = "LondonTweets1415midyear", db = "Tweetsdb")
+result=my_collection$aggregate('[
+{	"$project": {
+		"y": {
+			"$year": "$Time"
+		},
+		"m": {
+			"$month": "$Time"
+		},
+		"d": {
+			"$dayOfMonth": "$Time"
+		}
+	}
+},
+{
+	"$group": {
+		"_id": {
+			"year": "$y",
+			"month": "$m",
+			"day": "$d"
+		},
+		"count": {
+			"$sum": 1
+		}
+	}
+},
+{
+	"$sort": {
+		"_id.year": 1,
+		"_id.month": 1,
+		"_id.day": 1
+	}
+}]',
+options='{
+	"allowDiskUse": true
+}')
+
+save(result,file = "LondonTweets1415midyear_dailyStat.RData")
+```
+## read data from db and make the frequency plot
+```{r plot}
+#load("LondonTweets1516midyear_dailyStat.RData")
+#head(result)
+rt = result
+rt$time = paste(rt$`_id`$year,rt$`_id`$month,rt$`_id`$day,sep = "-")
+rt$time = as.Date( rt$time , '%Y-%m-%d')
+ggplot( data = rt, aes( time, count )) + geom_line() 
+```

@@ -1,0 +1,179 @@
+---
+title: "2_moa2loa_enriched_DNN"
+author: "zhendong yuan"
+date: "2019/9/22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(keras)
+library("Metrics")
+library("dplyr")
+library("BBmisc")
+library("rgdal")
+```
+
+```{r}
+
+moa_data = get(load("D:/londonPop/enriched_feature/moa_enriched_covariates.Rdata"))
+split <- rsample::initial_split(moa_data, prop = .8, strata = "population")
+train <- rsample::training(split)
+test  <- rsample::testing(split)
+
+# Create & standardize feature sets
+# training features
+train_x <- train %>% dplyr::select(-population)
+train_x = as.matrix(train_x)
+
+# testing features
+test_x <- test %>% dplyr::select(-population)
+test_x = as.matrix(test_x)
+# Create & transform response sets
+train_y <- train$population
+test_y  <- test$population
+
+
+# What is the dimension of our feature matrix?
+dim(train_x)
+
+dim(test_x)
+
+```
+
+```{r}
+model <- keras_model_sequential() %>%
+  # network architecture
+ layer_dense(units = 10, activation = "relu", input_shape = ncol(train_x)) %>%
+ # layer_batch_normalization() %>%
+  
+  layer_dense(units = 5, activation = "relu") %>%
+ # layer_batch_normalization() %>%
+  layer_dense(units = 3, activation = "relu") %>%
+  layer_dense(units = 1) %>%
+
+  
+  # backpropagation
+  compile(
+    optimizer = "RMSprop",
+    loss = "MSE",
+    metrics = c("mae")
+  )
+
+
+# train our model
+learn <- model %>% fit(
+  x = train_x,
+  y = train_y,
+  epochs = 60,
+  batch_size = 32,
+  validation_split = .2,
+  verbose = FALSE,
+  callbacks = list(
+callback_early_stopping(patience = 10),
+    callback_reduce_lr_on_plateau()
+  )
+)
+learn
+plot(learn)
+```
+
+#DNN trained on moa and predict on moa
+
+```{r}
+model %>% 
+  predict(test_x) %>% 
+  broom::tidy() %>% 
+  dplyr::mutate(
+    truth = test_y, 
+    pred_tran = x, 
+    truth_tran = truth
+    ) %>%
+   yardstick::mae(truth_tran, pred_tran)
+```
+
+# DNN trained on moa and directly predict on loa
+```{r}
+loa_data = get(load("D:/londonPop/enriched_feature/loa_enriched_covariates.Rdata"))
+target_x <- loa_data %>% dplyr::select(-population) %>% as.matrix()
+target_y <- loa_data$population
+```
+
+
+```{r}
+predict_pop = predict(model,target_x)
+summary(predict_pop)
+predict_pop[predict_pop<0]=0
+plot(density(predict_pop))
+
+real_pop =  target_y
+
+# rmse
+rmse(real_pop,predict_pop)
+
+# %rmse
+(rmse(real_pop,predict_pop)*length(real_pop))/sum(real_pop)
+
+#mae
+mae(real_pop,predict_pop)
+
+# %mae
+(mae(real_pop,predict_pop) * length(real_pop))/sum(real_pop)
+```
+#plot
+```{r}
+plot(density(real_pop),col="black")
+lines(density(predict_pop),col="red")
+```
+
+# denormalization
+```{r}
+moa_or_data= get(load("D:/londonPop/enriched_feature/raw_pop_mid_london.Rdata"))
+loa_or_data= get(load("D:/londonPop/enriched_feature/raw_pop_london_low.Rdata"))
+sum_or_pop = sum(moa_or_data$population)
+
+sum_loa_transferred_predict = sum(predict_pop)
+rough_ratio_red = sum_or_pop/sum_loa_transferred_predict
+descaled_loa_transferred_predict = predict_pop*rough_ratio_red
+# ratio transferred
+rough_ratio_red
+# estimate rmse
+rmse(loa_or_data$population,descaled_loa_transferred_predict)
+(rmse(loa_or_data$population,descaled_loa_transferred_predict)*length(loa_or_data$population))/sum(loa_or_data$population)
+mae(loa_or_data$population,descaled_loa_transferred_predict)
+(mae(loa_or_data$population,descaled_loa_transferred_predict) * length(loa_or_data$population))/sum(loa_or_data$population)
+
+
+```
+# check any negative number?
+```{r}
+summary(descaled_loa_transferred_predict)
+```
+
+#plot
+```{r}
+plot(density(loa_or_data$population),col="black")
+lines(density(descaled_loa_transferred_predict),col="red")
+#lines(density(descaled_source_data_test_predict),col = "blue")
+```
+
+
+# check the residual correlation
+```{r}
+plot(loa_or_data$population,descaled_loa_transferred_predict,xlim = c(0,10000),ylim = c(0,10000))
+abline(0,1, col='blue')
+
+```
+
+```{r}
+#loa_shape <- readOGR("/home/z/zhendong/london/enriched_feature/loa_enriched.shp")
+
+loa_shape <- readOGR("D:/londonPop/enriched_feature/loa_enriched.shp")
+
+loa_shape@data["D_pred_DNN"] = as.integer(descaled_loa_transferred_predict)
+loa_shape@data["T_pop_DNN"] = loa_or_data$population
+loa_shape@data["residual"] = loa_shape@data$D_pred_DNN - loa_shape@data$T_pop_DNN
+loa_shape@data["residual_abs"] = abs(loa_shape@data$D_pred_DNN - loa_shape@data$T_pop_DNN)
+writeOGR(loa_shape,dsn ="D:/londonPop/enriched_feature",layer = "2_moa2loa_DNN_spatial",driver = "ESRI Shapefile")
+```
+

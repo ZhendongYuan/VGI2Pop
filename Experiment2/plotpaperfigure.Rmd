@@ -1,0 +1,137 @@
+---
+title: "plotpaperfigure"
+author: "zhendong yuan"
+date: "2019/11/17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("ggplot2")
+```
+
+# get the plot data
+```{r}
+moa2loa_RF_direct = get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_RF_CV/KLIEP/moa2loa_RF_direct.Rdata"))
+moa2loa_RF_uLSIF = get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_RF_CV/KLIEP/moa2loa_RF_uLSIF.Rdata"))
+moa2loa_RF_RuLSIF= get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_RF_CV/KLIEP/moa2loa_RF_RuLSIF.Rdata"))
+moa2loa_RF_KLIEP= get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_RF_CV/KLIEP/moa2loa_RF_KLIEP.Rdata"))
+
+moa2loa_Xgboost_direct= get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_direct.Rdata"))
+moa2loa_Xgboost_uLSIF= get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_uLSIF.Rdata"))
+moa2loa_Xgboost_RuLSIF= get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_RuLSIF.Rdata"))
+moa2loa_Xgboost_KLIEP= get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_KLIEP.Rdata"))
+
+moa2loa_DNN_direct= get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_DNN_CV/moa2loa_DNN_direct.Rdata"))
+moa2loa_DNN_uLSIF= get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_DNN_CV/moa2loa_DNN_uLSIF.Rdata"))
+moa2loa_DNN_RuLSIF= get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_DNN_CV/moa2loa_DNN_RuLSIF.Rdata"))
+moa2loa_DNN_KLIEP= get(load("/data/zhendongBackup/london/20191213/enriched_feature/moa2loa_DNN_CV/moa2loa_DNN_KLIEP.Rdata"))
+
+```
+
+# visualize in one boxplot  %rmse
+```{r}
+colors = c("white",rep("powderblue",3),"white",rep("mistyrose",3),"white",rep("#69b3a2",3))
+
+par(mar=c(9, 3, 1, 1),mfrow=c(1,2))
+
+boxplot( moa2loa_DNN_direct$s_rmse,moa2loa_DNN_uLSIF$s_rmse,moa2loa_DNN_RuLSIF$s_rmse,moa2loa_DNN_KLIEP$s_rmse,
+         moa2loa_Xgboost_direct$s_rmse,moa2loa_Xgboost_uLSIF$s_rmse,moa2loa_Xgboost_RuLSIF$s_rmse,moa2loa_Xgboost_KLIEP$s_rmse,
+         moa2loa_RF_direct$s_rmse,moa2loa_RF_uLSIF$s_rmse,moa2loa_RF_RuLSIF$s_rmse,moa2loa_RF_KLIEP$s_rmse,
+         col= colors,las = 3,
+         names=c("DNN-Baseline","DNN-uLSIF","DNN-RuLSIF","DNN_KLIEP",
+                 "Xgboost-Baseline","Xgboost-uLSIF","Xgboost-RuLSIF","Xgboost-KLIEP",
+                 "RF-Baseline","RF-uLSIF","RF-RuLSIF","RF-KLIEP"))
+boxplot( moa2loa_DNN_direct$s_mae,moa2loa_DNN_uLSIF$s_mae,moa2loa_DNN_RuLSIF$s_mae,moa2loa_DNN_KLIEP$s_mae,
+         moa2loa_Xgboost_direct$s_mae,moa2loa_Xgboost_uLSIF$s_mae,moa2loa_Xgboost_RuLSIF$s_mae,moa2loa_Xgboost_KLIEP$s_mae,
+         moa2loa_RF_direct$s_mae,moa2loa_RF_uLSIF$s_mae,moa2loa_RF_RuLSIF$s_mae,moa2loa_RF_KLIEP$s_mae,
+         col= colors, las = 3,
+         names=c("DNN-Baseline","DNN-uLSIF","DNN-RuLSIF","DNN_KLIEP",
+                 "Xgboost-Baseline","Xgboost-uLSIF","Xgboost-RuLSIF","Xgboost-KLIEP",
+                 "RF-Baseline","RF-uLSIF","RF-RuLSIF","RF-KLIEP"))
+
+temp_df = as.data.frame(cbind(moa2loa_DNN_direct$s_mae,moa2loa_DNN_uLSIF$s_mae,moa2loa_DNN_RuLSIF$s_mae,moa2loa_DNN_KLIEP$s_mae,
+         moa2loa_Xgboost_direct$s_mae,moa2loa_Xgboost_uLSIF$s_mae,moa2loa_Xgboost_RuLSIF$s_mae,moa2loa_Xgboost_KLIEP$s_mae,
+         moa2loa_RF_direct$s_mae,moa2loa_RF_uLSIF$s_mae,moa2loa_RF_RuLSIF$s_mae,moa2loa_RF_KLIEP$s_mae))
+
+colnames(temp_df) = c("DNN-Baseline","DNN-uLSIF","DNN-RuLSIF","DNN_KLIEP",
+                 "Xgboost-Baseline","Xgboost-uLSIF","Xgboost-RuLSIF","Xgboost-KLIEP",
+                 "RF-Baseline","RF-uLSIF","RF-RuLSIF","RF-KLIEP")
+
+
+# convert wide to long
+plotDat <- gather(temp_df, "x", "y")
+
+
+ggplot(plotDat, aes(x, y)) +
+  geom_boxplot() +
+  coord_flip()
+
+
+
+library(tidyr)
+set.seed(1); x <- matrix(rexp(200, rate = 0.1), ncol = 20)
+colnames(x) <- paste0("Very Very Very Very Long Label", seq(ncol(x)))
+df1 <-data.frame(x)
+
+# convert wide to long
+plotDat <- gather(df1, "x", "y")
+
+ggplot(df1, aes(x, y)) +
+  geom_boxplot() +
+  coord_flip()
+```
+
+```{r}
+#https://www.tenderisthebyte.com/blog/2019/04/25/rotating-axis-labels-in-r/
+par(mar = c(6.1, 4.1, 4.1, 4.1), # change the margins
+    lwd = 2, # increase the line thickness
+    cex.axis = 1.2 # increase default axis label size
+    )
+
+## Draw boxplot with no axes.
+boxplot( temp_rmse_df,
+         col= colors,xaxt = "n", yaxt = "n")
+
+## Draw x-axis without labels.
+axis(side = 1, labels = FALSE)
+
+## Draw y-axis.
+axis(side = 2,
+     ## Rotate labels perpendicular to y-axis.
+     las = 2,
+     ## Adjust y-axis label positions.
+     mgp = c(3, 0.75, 0))
+
+## Draw the x-axis labels.
+text(x = 1:12,
+     ## Move labels to just below bottom of chart.
+     y = par("usr")[3] - 0.45,
+     ## Use names from the data list.
+     labels = c("DNN-Baseline","DNN-uLSIF","DNN-RuLSIF","DNN_KLIEP",
+                 "Xgboost-Baseline","Xgboost-uLSIF","Xgboost-RuLSIF","Xgboost-KLIEP",
+                 "RF-Baseline","RF-uLSIF","RF-RuLSIF","RF-KLIEP"),
+     ## Change the clipping region.
+     xpd = NA,
+     ## Rotate the labels by 35 degrees.
+     srt = 35,
+     ## Adjust the labels to almost 100% right-justified.
+     adj = 0.965,
+     ## Increase label size.
+     cex = 1.2)
+```
+
+
+# %mae
+```{r}
+
+colors = c("white",rep("yellow",3),"white",rep("blue",3),"white",rep("green",3))
+par(mar=c(14, 3, 1, 1))
+boxplot( moa2loa_DNN_direct$s_mae,moa2loa_DNN_uLSIF$s_mae,moa2loa_DNN_RuLSIF$s_mae,moa2loa_DNN_KLIEP$s_mae,
+         moa2loa_Xgboost_direct$s_mae,moa2loa_Xgboost_uLSIF$s_mae,moa2loa_Xgboost_RuLSIF$s_mae,moa2loa_Xgboost_KLIEP$s_mae,
+         moa2loa_RF_direct$s_mae,moa2loa_RF_uLSIF$s_mae,moa2loa_RF_RuLSIF$s_mae,moa2loa_RF_KLIEP$s_mae,col= colors,las = 2,
+         names=c("DNN-Baseline","DNN-uLSIF","DNN-RuLSIF","DNN_KLIEP",
+                 "Xgboost-Baseline","Xgboost-uLSIF","Xgboost-RuLSIF","Xgboost-KLIEP",
+                 "RF-Baseline","RF-uLSIF","RF-RuLSIF","RF-KLIEP"))
+```
+

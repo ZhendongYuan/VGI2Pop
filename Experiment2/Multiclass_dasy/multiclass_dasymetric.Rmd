@@ -1,0 +1,171 @@
+---
+title: "multiclass_dasymetric"
+author: "zhendong yuan"
+date: "2019/10/4"
+output: html_document
+---
+
+```{r setup, results='hide', message=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("rgdal")
+library("sp")
+library("dplyr")
+library("Metrics")
+```
+
+## read data
+
+```{r}
+#popdensity_class <- readOGR("/home/z/zhendong/london/multiclassdsymetric/classdensity.shp")
+popdensity_class <- readOGR("/data/zhendongBackup/london/multiclassdsymetric/classdensity.shp")
+raw_pop_mid_london = get(load("/home/z/zhendong/london/Rspace/pop/raw_pop_mid_london.Rdata"))
+moa_class_df = merge(popdensity_class@data,raw_pop_mid_london, by.x = "MSOA11CD" ,by.y = "AreaCodes")
+moa_class_df["pop_densi_class"] = (moa_class_df$population*moa_class_df$AREA_RATIO)/moa_class_df$AREA_CLASS
+```
+
+# population density fraction of urbanization class u in county c
+```{r}
+sum_class_pop_densi = sum(moa_class_df$pop_densi_class)
+moa_class_df["pop_d"] =(moa_class_df$pop_densi_class / sum_class_pop_densi)
+
+moa_class_df[,c(1,5:12)] = NULL
+# total fraction
+moa_class <- readOGR("/data/zhendongBackup/london/multiclassdsymetric/lulc_london_temp.shp")
+total_fraction_class = merge(moa_class@data, moa_class_df, by.x = "CLASS_NAME", by.y="CLASS_NAME", all.x=TRUE)
+
+
+moa_f_sum = total_fraction_class %>%
+  group_by(MSOA11CD) %>%
+  summarize(F_sum = sum(pop_d*pop_densi_class))
+
+total_fraction_class_temp = merge(total_fraction_class, moa_f_sum, by.x = "MSOA11CD", by.y="MSOA11CD", all.x=TRUE)
+
+total_fraction_class["total_fraction_class"] = (total_fraction_class_temp$pop_d*total_fraction_class_temp$AREA_RATIO.x)/total_fraction_class_temp$F_sum
+
+# final population
+final = merge(total_fraction_class,raw_pop_mid_london,by.x = "MSOA11CD" ,by.y = "AreaCodes", all.x = TRUE)
+total_fraction_class["final_pop"] = (final$total_fraction_class*final$population)
+
+summary(total_fraction_class["final_pop"])
+```
+```{r}
+total_fraction_class["final_pop_dens"] = (total_fraction_class$final_pop/total_fraction_class$AREA_CLASS.x)
+summary(total_fraction_class$AREA_CLASS.x)
+summary(total_fraction_class$final_pop_dens)
+```
+# plot the prediction on sbl
+```{r}
+plot(density(total_fraction_class$final_pop))
+```
+
+# output the prediction on street block level
+```{r}
+moa_class@data$LULC_OBJ_G = as.numeric(as.character(moa_class@data$LULC_OBJ_G))
+total_fraction_class$LULC_OBJ_G = as.numeric(as.character(total_fraction_class$LULC_OBJ_G))
+result_sbl = merge(moa_class,total_fraction_class, by = "LULC_OBJ_G")
+save(result_sbl,file = "/data/zhendongBackup/london/multiclassdsymetric/result_sbl.Rdata")
+```
+
+
+## aggragated to loa for valdation
+```{r}
+
+loa_pred_pop = total_fraction_class %>%
+  group_by(LOA_GID) %>%
+  summarize(LOA_pred_pop = sum(final_pop))
+summary(loa_pred_pop)
+
+raw_pop_loa_london = get(load("/home/z/zhendong/london/Rspace/pop/raw_pop_london_low.Rdata"))
+loa_pred_pop = merge(loa_pred_pop,raw_pop_loa_london[,c("AreaCodes","population")],all.y=TRUE,by.x = "LOA_GID",by.y="AreaCodes")
+loa_pred_pop$LOA_pred_pop[is.na(loa_pred_pop$LOA_pred_pop)] <- 0
+summary(loa_pred_pop)
+```
+## accuracy metrics
+```{r}
+rmse(loa_pred_pop$population,loa_pred_pop$LOA_pred_pop)
+(rmse(loa_pred_pop$population,loa_pred_pop$LOA_pred_pop)*length(loa_pred_pop$population))/sum(loa_pred_pop$population)
+mae(loa_pred_pop$population,loa_pred_pop$LOA_pred_pop)
+(mae(loa_pred_pop$population,loa_pred_pop$LOA_pred_pop) * length(loa_pred_pop$population))/sum(loa_pred_pop$population)
+```
+# plot the density
+```{r}
+plot(density(loa_pred_pop$population),col="black")+
+lines(density(loa_pred_pop$LOA_pred_pop),col="red")
+```
+
+## st_intersection with loa.
+```{r}
+lulc_london_loa <- readOGR("/home/z/zhendong/london/multiclassdsymetric/lulc_london_loa.shp")
+# here
+lulc_london_loa_final = merge(lulc_london_loa@data,total_fraction_class,by="LULC_OBJ_G",all.x = TRUE)
+
+lulc_london_loa_final["pop_loa_obj"] =  lulc_london_loa_final$final_pop*lulc_london_loa_final$AREA_RATIO
+
+loa_pred_pop = lulc_london_loa_final %>%
+  group_by(LOA_GID.x) %>%
+  summarize(LOA_pred_pop_2 = sum(pop_loa_obj))
+summary(loa_pred_pop)
+
+loa_pred_pop = merge(loa_pred_pop,raw_pop_loa_london[,c("AreaCodes","population")],all.y=TRUE,by.x = "LOA_GID.x",by.y="AreaCodes")
+loa_pred_pop$LOA_pred_pop_2[is.na(loa_pred_pop$LOA_pred_pop_2)] <- 0
+summary(loa_pred_pop)
+
+```
+# output
+
+```{r}
+london_low <- readOGR("/home/z/zhendong/london/LSOA_2011_London_3857.shp")
+colnames(london_low@data)
+london_low_output = merge(london_low,loa_pred_pop,by.x="LSOA11CD", by.y = "LOA_GID.x",all.x = TRUE)
+colnames(london_low_output@data)
+london_low_output@data[,c(2:14)] = NULL
+colnames(london_low_output@data)
+save(london_low_output, file="/home/z/zhendong/london/multiclassdsymetric/london_low_output.Rdata")
+```
+
+## accuracy metrics
+```{r}
+rmse(loa_pred_pop$population,loa_pred_pop$LOA_pred_pop_2)
+(rmse(loa_pred_pop$population,loa_pred_pop$LOA_pred_pop_2)*length(loa_pred_pop$population))/sum(loa_pred_pop$population)
+mae(loa_pred_pop$population,loa_pred_pop$LOA_pred_pop_2)
+(mae(loa_pred_pop$population,loa_pred_pop$LOA_pred_pop_2) * length(loa_pred_pop$population))/sum(loa_pred_pop$population)
+```
+# visualize predicted pop and the real one  
+```{r}
+
+plot(density(loa_pred_pop$population),col="black")+
+lines(density(loa_pred_pop$LOA_pred_pop_2),col="red")
+```
+# check the residual 
+```{r}
+plot(density(loa_pred_pop$population-loa_pred_pop$LOA_pred_pop_2),col="black")
+```
+
+#check the predicted pop and the real one    correlation
+```{r}
+plot(loa_pred_pop$population,loa_pred_pop$LOA_pred_pop_2, xlim = c(0,9000),ylim = c(0,9000))
+abline(0,1, col='blue')
+# pearson
+cor_matrix_2 <- cor(loa_pred_pop[c("population","LOA_pred_pop_2")], use = 'complete.obs')
+cor_matrix_2
+
+```
+
+#3. check residual
+```{r}
+residul = loa_pred_pop$population - loa_pred_pop$LOA_pred_pop_2
+
+plot(density(residul))
+abline(v = 0, col='blue')
+
+plot(loa_pred_pop$population,residul)
+
+```
+
+
+
+
+
+
+
+
