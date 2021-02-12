@@ -18,9 +18,18 @@ The performance of two popular dasymetric mapping methods are compared to VGI2Po
 ## Code of VGI2Pop
 
 Show the tree structure and explain which part is for what.
+
 Preprocessing:
-experiment 1:
-experiment 2: 
+
+This folder contains the preprocessing for cleaning twitter, population data, extracting street blocks (thanks links for sharing this).
+
+Experiment 1:
+
+This folder records how the features extracted from osm and twitter data sets and trained the machine learning based dasymetric mapping models with and without considering scale effect.
+
+Experiment 2: 
+
+This folder contains the implementation of VGI2Pop and two traditional models as comparisons (multi-class dasymetric mapping method and the random forest method based on land use and land cover data). 
 
 ## exsiting fine-scaled urban population map
 
