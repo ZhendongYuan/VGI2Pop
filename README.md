@@ -15,9 +15,12 @@ In this experiment, we compared the performance of machine learning based dasyme
 The performance of two popular dasymetric mapping methods are compared to VGI2Pop. Our proposed VGI2Pop achieved 71.4% higher aggregated accuracy than the conventional multi-class dasymetric mapping method and 48.8% higher than the random forest method based on land use and land cover data.
 
 
-## code of VGI2Pop
+## Code of VGI2Pop
 
-show the tree structure and explain which part is for what 
+Show the tree structure and explain which part is for what.
+Preprocessing:
+experiment 1:
+experiment 2: 
 
 ## exsiting fine-scaled urban population map
 
