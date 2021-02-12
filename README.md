@@ -5,17 +5,24 @@ The micro-urban structure features extracted from OSM and user's locations of tw
 We proposed to apply the domain adaptation techniques to mitigate the scale effect and the result shows that our VGI2Pop can outperform than broadly used dasymetric mapping.
 
 ## introduction 
+This repository stored the code of VGI2Pop and data of the Greater London Area as example where the offical population data are avilable at two distinct scales namly LOA and MOA. 
+Two experiments are recorded. 
 
-This repository stored the code and data for VGI2Pop.
+### Experiment 1: Scale effect in dasymetric mapping
+In this experiment, we compared the performance of machine learning based dasymetric mapping with and without considering scale effect. The result shows that the scale effect affected prediction accuracy and our proposed adaptation can reduce it (15% performance boost for the deep neural network, 21% for Xgboost, and 5% for Random Forest compared to dasymetric mapping methods ignoring scale effect).
 
+### Experiment 2: Overall performance of VGI2Pop
+The performance of two popular dasymetric mapping methods are compared to VGI2Pop. Our proposed VGI2Pop achieved 71.4% higher aggregated accuracy than the conventional multi-class dasymetric mapping method and 48.8% higher than the random forest method based on land use and land cover data.
 
 
 ## code of VGI2Pop
 
-explain the which part is for what 
+show the tree structure and explain which part is for what 
 
 ## exsiting fine-scaled urban population map
 
+1. The Greater London Area.
+result figures.
 
 
 
