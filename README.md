@@ -4,7 +4,7 @@ VGI2Pop is one open-sourced and adapted dasymteric mapping method which can down
 The micro-urban structure features extracted from OSM and user's locations of twitter data can better represent the distribution of urban population. Moreover, we found that scale effect ignored by the conventional dasymetrci mapping methods limits the perdiction accuracy.
 We proposed to apply the domain adaptation techniques to mitigate the scale effect and the result shows that our VGI2Pop can outperform than broadly used dasymetric mapping.
 
-## introduction 
+## Introduction 
 This repository stored the code of VGI2Pop and data of the Greater London Area as example where the offical population data are avilable at two distinct scales namly LOA and MOA. 
 Two experiments are recorded. 
 
@@ -31,7 +31,7 @@ Experiment 2:
 
 This folder contains the implementation of VGI2Pop and two traditional models as comparisons (multi-class dasymetric mapping method and the random forest method based on land use and land cover data). 
 
-## exsiting fine-scaled urban population map
+## Exsiting fine-scaled urban population map
 
 1. The Greater London Area.
 result figures.
