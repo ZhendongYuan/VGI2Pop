@@ -9,7 +9,7 @@ This repository stored the code of VGI2Pop and data of the Greater London Area a
 Two experiments are recorded. 
 
 ### Experiment 1: Scale effect in dasymetric mapping
-In this experiment, we compared the performance of machine learning based dasymetric mapping with and without considering scale effect. The result shows that the scale effect affected prediction accuracy and our proposed adaptation can reduce it (15% performance boost for the deep neural network, 21% for Xgboost, and 5% for Random Forest compared to dasymetric mapping methods ignoring scale effect).
+In this experiment, we compared the performance of machine learning based dasymetric mapping with and without considering scale effect. The result shows that the scale effect affected prediction accuracy and our proposed adaptation can reduce it (17% performance boost in ratio for the deep neural network, 16% for Xgboost, and 5% for Random Forest compared to dasymetric mapping methods ignoring scale effect).
 
 ### Experiment 2: Overall performance of VGI2Pop
 The performance of two popular dasymetric mapping methods are compared to VGI2Pop. Our proposed VGI2Pop achieved 71.4% higher aggregated accuracy than the conventional multi-class dasymetric mapping method and 48.8% higher than the random forest method based on land use and land cover data.
@@ -30,6 +30,14 @@ This folder records how the features extracted from osm and twitter data sets an
 Experiment 2: 
 
 This folder contains the implementation of VGI2Pop and two traditional models as comparisons (multi-class dasymetric mapping method and the random forest method based on land use and land cover data). 
+
+## Involved data in case study area (Greater London)
+1. population excel download from national statistic office;
+2. Shapefile for LSOA and MSOA;
+3. OSM data download from OHSOME API;
+4. Twitter data download from Twitter API;
+5. Urban Atlas.
+
 
 ## Exsiting fine-scaled urban population map
 
