@@ -39,10 +39,4 @@ This folder contains the implementation of VGI2Pop and two traditional models as
 5. Urban Atlas.
 
 
-## Exsiting fine-scaled urban population map
-
-1. The Greater London Area.
-result figures.
-
-
 
