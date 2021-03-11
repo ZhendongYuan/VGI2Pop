@@ -1,0 +1,28 @@
+---
+title: "summarizedatatable"
+date: "2020/2/3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#loa
+```{r}
+load("/data/*******Backup/london/20191213/enriched_feature/loa_enriched_covariates_nonscaled.Rdata")
+summary(loa_data_reordered)
+```
+
+#moa
+```{r}
+load("/data/*******Backup/london/20191213/enriched_feature/moa_enriched_covariates_nonscaled.Rdata")
+summary(moa_data)
+```
+
+#sbl
+```{r}
+load("/data/*******Backup/london/20191213/enriched_feature/sbl_enriched_covariates_nonscaled.Rdata")
+summary(sbl_data)
+```
+

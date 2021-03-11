@@ -1,0 +1,254 @@
+---
+title: "moa2loa_enriched_adaptation_RuLSIF"
+author: "*********"
+date: "2019/9/22"
+output: html_document
+---
+
+```{r setup, results='hide', message=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("dplyr")
+library("h2o")
+library("rsample") 
+library("Metrics")
+library("densratio")
+library(corrplot)
+```
+
+# in this file, domain adaption will be test from moa2loa
+# load source and target data
+
+```{r}
+# load loa and moa
+target_data = get(load("/home/z/*********/london/enriched_feature/loa_enriched_covariates.Rdata"))
+plot(density(target_data$B_NUMBER))
+summary(target_data)
+source_data = get(load("/home/z/*********/london/enriched_feature/moa_enriched_covariates.Rdata"))
+plot(density(source_data$B_NUMBER))
+summary(source_data)
+```
+
+# directly ratio esitimation 
+```{r}
+target_data$population = NULL
+target_data_dropPop = target_data
+target_data = NULL
+source_data$population = NULL
+source_data_dropPop = source_data
+source_data = NULL
+target_data_dropPop[is.na(target_data_dropPop)] <- 0
+source_data_dropPop[is.na(source_data_dropPop)] <- 0
+```
+
+#
+```{r}
+#densratio_obj_uLSIF <- densratio(source_data_dropPop,target_data_dropPop,method = "RuLSIF")
+
+#density_ratio = densratio_obj_uLSIF$compute_density_ratio(source_data_dropPop)
+weights = get(load("/home/z/*********/london/enriched_feature/moa2loa_weights_RuLSIF.Rdata"))
+density_ratio = weights
+summary(density_ratio)
+plot(density(density_ratio))
+```
+
+
+# weighted model which trained and fine-tuned from moa
+```{r}
+# load loa and moa
+source_data = get(load("/home/z/*********/london/enriched_feature/moa_enriched_covariates.Rdata"))
+source_data["weights"] = density_ratio
+
+
+# save this weights for further analysis
+#save(source_data,file = "/home/z/*********/london/enriched_feature/moa2loa_enriched_weights_RuLSIF.Rdata")
+
+#set.seed(123)
+source_data_split <- initial_split(source_data, prop = .7)
+source_data_train <- training(source_data_split)
+source_data_test  <- testing(source_data_split)
+source_data = NULL
+h2o.no_progress()
+h2o.init(max_mem_size = "10g")
+source_moa_train.h2o <- as.h2o(source_data_train)
+y <- "population"
+x <- setdiff(names(source_moa_train.h2o), y)
+# train final model
+h2o.moa.final <- h2o.randomForest(
+  
+  x = x,
+  y = y,
+  
+  training_frame = source_moa_train.h2o,
+  weights_column = "weights",
+
+
+
+ nfolds = 5,
+  mtries = -1,
+  nbins = 30,
+   ntrees = 7000, 
+  max_depth = 150,
+  sample_rate = 0.8,
+  stopping_rounds = 20
+
+
+
+)
+
+# model stopped after xx trees
+h2o.moa.final@parameters$ntrees
+
+# cross validated RMSE
+h2o.rmse(h2o.moa.final, xval = TRUE)
+```
+# weighted model predict on moa level. validat in testing dataset
+```{r}
+source_data_test$weights = NULL
+source_data_test.h2o <- as.h2o(source_data_test)
+h2o.performance(model = h2o.moa.final, newdata = source_data_test.h2o)
+source_data_test_population = source_data_test$population
+source_data_test$population = NULL
+source_data_test.h2o <- as.h2o(source_data_test)
+# evaluate performance on loa
+source_data_test_predict = as.data.frame(h2o.predict(h2o.moa.final, source_data_test.h2o))
+source_data_test["population"] = source_data_test_population
+```
+```{r}
+predict_pop = source_data_test_predict$predict
+
+
+real_pop =  source_data_test$population
+
+# rmse
+rmse(real_pop,predict_pop)
+
+# %rmse
+(rmse(real_pop,predict_pop)*length(real_pop))/sum(real_pop)
+
+#mae
+mae(real_pop,predict_pop)
+
+# %mae
+(mae(real_pop,predict_pop) * length(real_pop))/sum(real_pop)
+```
+# weighted model adapted to data at loa level
+```{r}
+target_data = get(load("/home/z/*********/london/enriched_feature/loa_enriched_covariates.Rdata"))
+
+#target_data$population = NULL
+target.loa.h2o <- as.h2o(target_data)
+# evaluate performance on loa
+weighted_loa_performance = h2o.performance(model = h2o.moa.final, newdata = target.loa.h2o)
+weighted_loa_performance
+
+(weighted_loa_performance@metrics$RMSE*length(target_data$population))/sum(target_data$population)
+(weighted_loa_performance@metrics$mae*length(target_data$population))/sum(target_data$population)
+
+```
+# check the distribution of response
+```{r}
+target_data$population = NULL
+target.loa.h2o <- as.h2o(target_data)
+loa_transferred_predict = as.data.frame(h2o.predict(h2o.moa.final, target.loa.h2o))
+summary(loa_transferred_predict)
+target_data = get(load("/home/z/*********/london/enriched_feature/loa_enriched_covariates.Rdata"))
+plot(density(target_data$population),col="black")+
+  lines(density(source_data_train$population),col="green")+
+lines(density(loa_transferred_predict$predict),col="red")+
+lines(density(source_data_test_predict$predict),col= "blue")+
+lines(density(source_data_test$population),col = "purple")
+
+```
+# check the residual correlation
+```{r}
+#target_data$population,loa_transferred_predict$predict
+
+result_df = as.data.frame(cbind(loa_transferred_predict$predict,target_data$population))
+colnames(result_df) = c("loa_transferred_predict","target_pop")
+result_df.lm = lm(target_pop ~ loa_transferred_predict, data=result_df) 
+plot(target_data$population,loa_transferred_predict$predict,xlim = c(0,1),ylim = c(0,1))
+abline(0,1, col='blue')
+abline(result_df.lm,col="red")
+summary(result_df.lm)
+```
+
+
+
+# denormalization
+```{r}
+moa_or_data= get(load("/home/z/*********/london/Rspace/pop/raw_pop_mid_london.Rdata"))
+loa_or_data= get(load("/home/z/*********/london/Rspace/pop/raw_pop_london_low.Rdata"))
+sum_or_pop = sum(moa_or_data$population)
+
+sum_loa_transferred_predict = sum(loa_transferred_predict$predict)
+rough_ratio_red = sum_or_pop/sum_loa_transferred_predict
+descaled_loa_transferred_predict = loa_transferred_predict$predict*rough_ratio_red
+# ratio transferred
+rough_ratio_red
+# estimate rmse
+rmse(loa_or_data$population,descaled_loa_transferred_predict)
+(rmse(loa_or_data$population,descaled_loa_transferred_predict)*length(loa_or_data$population))/sum(loa_or_data$population)
+mae(loa_or_data$population,descaled_loa_transferred_predict)
+(mae(loa_or_data$population,descaled_loa_transferred_predict) * length(loa_or_data$population))/sum(loa_or_data$population)
+
+summary(descaled_loa_transferred_predict)
+```
+
+#plot
+```{r}
+plot(density(loa_or_data$population),col="black")
+#lines(density(moa_or_data$population),col="green")
+lines(density(descaled_loa_transferred_predict),col="red")
+#lines(density(descaled_source_data_test_predict),col = "blue")
+legend("topright", 
+  legend = c("Reference population", "Prediction"), 
+  col = c("black","red"), 
+  lty  = 1, 
+ bty = "n", 
+ lwd = 1.5,
+  #pt.cex = 2.5, 
+  cex = 1, 
+  text.col = "black", 
+  horiz = F , 
+  #inset = c(0.05, 0.05)
+ )
+```
+
+
+# check the predict vs true 
+```{r}
+#target_data$population,loa_transferred_predict$predict
+
+de_nor_result_df = as.data.frame(cbind(descaled_loa_transferred_predict,loa_or_data$population))
+colnames(de_nor_result_df) = c("descaled_loa_transferred_predict","loa_pop")
+de_result_df.lm = lm(loa_pop ~ descaled_loa_transferred_predict, data=de_nor_result_df) 
+plot(loa_or_data$population,descaled_loa_transferred_predict,xlim = c(0,10000),ylim = c(0,10000))
+abline(0,1, col='blue')
+abline(de_result_df.lm,col="red")
+summary(de_result_df.lm)
+```
+
+```{r}
+cor_matrix_2 <- cor(de_nor_result_df, use = 'complete.obs')
+cor_matrix_2
+```
+
+# check the correlation with B_area_sum
+```{r}
+residuls_tf = abs(descaled_loa_transferred_predict-loa_or_data$population)
+
+plot(density(residuls_tf))
+loa_data = get(load("/home/z/*********/london/enriched_feature/loa_enriched_covariates.Rdata"))
+plot(loa_data$B_AREA_SUM,residuls_tf)
+
+```
+
+
+```{r}
+residul_df = as.data.frame(cbind(loa_data,descaled_loa_transferred_predict,loa_or_data$population,residuls_tf))
+colnames(residul_df)[c(37:39)] = c("pred_pop","true_pop","resi_pop")
+cor_matrix <- cor(residul_df, use = 'complete.obs')
+corrplot.mixed(cor_matrix, lower = "circle", upper = "number", tl.pos = "lt", diag = "u")
+```
+
+

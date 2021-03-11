@@ -1,0 +1,323 @@
+---
+title: "enriched_moa2sbl_keepall"
+author: "********* yuan"
+date: "2019/10/10"
+output: html_document
+---
+
+
+```{r setup, results='hide', message=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("dplyr")
+library("h2o")
+library("rsample") 
+library("Metrics")
+library("densratio")
+library("rgdal")
+```
+
+# in this file, domain adaption will be test from moa2loa
+# load source and target data
+
+```{r}
+# load loa and moa
+target_data = get(load("/data/*********Backup/london/20191213/enriched_feature/sbl_enriched_covariates.Rdata"))
+plot(density(target_data$B_NUMBER))
+colnames(target_data)
+source_data = get(load("/data/*********Backup/london/20191213/enriched_feature/moa_enriched_covariates.Rdata"))
+plot(density(source_data$B_NUMBER))
+colnames(source_data)
+```
+
+# directly ratio esitimation 
+```{r}
+target_data$population = NULL
+target_data_dropPop = target_data
+target_data = NULL
+source_data$population = NULL
+source_data_dropPop = source_data
+source_data = NULL
+target_data_dropPop[is.na(target_data_dropPop)] <- 0
+source_data_dropPop[is.na(source_data_dropPop)] <- 0
+```
+
+#
+```{r}
+#densratio_obj_uLSIF <- densratio(source_data_dropPop,target_data_dropPop)
+
+#density_ratio = densratio_obj_uLSIF$compute_density_ratio(source_data_dropPop)
+weights = get(load("/data/*********Backup/london/20191213/enriched_feature/moa2sbl_weights_uLSIF.Rdata"))
+summary(weights)
+plot(density(weights))
+```
+
+
+# weighted model which trained and fine-tuned from moa
+```{r}
+# load loa and moa
+source_data = get(load("/data/*********Backup/london/20191213/enriched_feature/moa_enriched_covariates.Rdata"))
+source_data["weights"] = weights
+
+
+source_data_split <- initial_split(source_data, prop = .8)
+source_data_train <- training(source_data_split)
+source_data_test  <- testing(source_data_split)
+source_data = NULL
+h2o.no_progress()
+h2o.init(max_mem_size = "10g")
+source_moa_train.h2o <- as.h2o(source_data_train)
+y <- "population"
+x <- setdiff(names(source_moa_train.h2o), y)
+# train final model
+h2o.moa.final <- h2o.randomForest(
+  
+  x = x,
+  y = y,
+  
+  training_frame = source_moa_train.h2o,
+  weights_column = "weights",
+
+
+
+ nfolds = 5,
+  mtries = -1,
+  nbins = 30,
+   ntrees = 7000, 
+  max_depth = 150,
+  sample_rate = 0.8,
+  stopping_rounds = 20
+
+
+
+)
+
+# model stopped after xx trees
+h2o.moa.final@parameters$ntrees
+
+# cross validated RMSE
+h2o.rmse(h2o.moa.final, xval = TRUE)
+
+# plot model.
+h2o.moa.final
+```
+
+
+```{r}
+
+h2o.varimp_plot(h2o.moa.final,num_of_features = 15)
+
+```
+
+
+
+
+
+# weighted model predict on moa level. validat in testing dataset
+```{r}
+source_data_test$weights = NULL
+source_data_test.h2o <- as.h2o(source_data_test)
+h2o.performance(model = h2o.moa.final, newdata = source_data_test.h2o)
+source_data_test_population = source_data_test$population
+source_data_test$population = NULL
+source_data_test.h2o <- as.h2o(source_data_test)
+# evaluate performance on loa
+source_data_test_predict = as.data.frame(h2o.predict(h2o.moa.final, source_data_test.h2o))
+source_data_test["population"] = source_data_test_population
+```
+```{r}
+predict_pop = source_data_test_predict$predict
+real_pop =  source_data_test$population
+
+# rmse
+rmse(real_pop,predict_pop)
+
+# %rmse
+(rmse(real_pop,predict_pop)*length(real_pop))/sum(real_pop)
+
+#mae
+mae(real_pop,predict_pop)
+
+# %mae
+(mae(real_pop,predict_pop) * length(real_pop))/sum(real_pop)
+```
+
+# weighted model adapted applied to data at sbl level
+```{r}
+target_data = get(load("/home/z/*********/london/enriched_feature/sbl_enriched_covariates.Rdata"))
+colnames(target_data)
+#target_data$population = NULL
+target.loa.h2o <- as.h2o(target_data)
+sb_transferred_predict = as.data.frame(h2o.predict(h2o.moa.final, target.loa.h2o))
+plot(density(sb_transferred_predict$predict))
+
+```
+
+
+#1 denormalize it 
+```{r}
+loa_or_data= get(load("/home/z/*********/london/Rspace/loa_data.Rdata"))
+moa_or_data= get(load("/home/z/*********/london/Rspace/moa_data.Rdata"))
+sum_or_pop = sum(moa_or_data$population)
+print("sum true pop")
+sum_or_pop
+sum_sb_transferred_predict = sum(sb_transferred_predict$predict)
+rough_ratio_red = sum_or_pop/sum_sb_transferred_predict
+# ratio transferred
+print("ratio transferred")
+rough_ratio_red
+
+descaled_sb_transferred_predict = sb_transferred_predict$predict*rough_ratio_red
+print("sum up descaled sb predicted pop")
+sum(descaled_sb_transferred_predict)
+
+# aggreagete into loa according to loa_id
+sb_shape <- readOGR("/home/z/*********/london/enriched_feature/street_blocksl_withinloa.shp")
+colnames(sb_shape@data)
+class(sb_shape@data$LSOA11CD)
+sb_shape@data$LSOA11CD = as.character(sb_shape@data$LSOA11CD)
+descaled_sb_transferred_predict_loa = NULL
+descaled_sb_transferred_predict_loa = as.data.frame(cbind(descaled_sb_transferred_predict,sb_shape@data$LSOA11CD))
+colnames(descaled_sb_transferred_predict_loa) = c("predicted_pop","LSOA11CD")
+descaled_sb_transferred_predict_loa$predicted_pop = as.numeric(as.character(descaled_sb_transferred_predict_loa$predicted_pop))
+descaled_sb_transferred_predict_loa$LSOA11CD = as.character(descaled_sb_transferred_predict_loa$LSOA11CD)
+
+# store this 
+sb_shape@data["pred_pop"] = descaled_sb_transferred_predict
+temp = sb_shape@data
+save(temp,file="/home/z/*********/london/enriched_feature/moa2sbl/enriched_sbl_predict_pop_ulsif_1.Rdata")
+
+predicted_agg_sb2loa = descaled_sb_transferred_predict_loa %>% 
+  group_by(LSOA11CD) %>% 
+  summarise(predicted_pop = sum(predicted_pop))
+
+raw_pop_loa= get(load("/home/z/*********/london/Rspace/pop/raw_pop_london_low.Rdata"))
+
+raw_pop_loa = raw_pop_loa[,c(1,3)]
+raw_pop_loa$AreaCodes = as.character(raw_pop_loa$AreaCodes)
+
+pop_london_low = merge(raw_pop_loa,predicted_agg_sb2loa, by.x = "AreaCodes", by.y = "LSOA11CD", all = TRUE)
+
+summary(pop_london_low)
+
+pop_london_low[is.na(pop_london_low)] <- 0
+print("sum up descaled loa predicted pop")
+sum(pop_london_low$predicted_pop)
+print("sum up true loa pop")
+sum(pop_london_low$population)
+```
+#1
+```{r}
+rmse(pop_london_low$population,pop_london_low$predicted_pop)
+(rmse(pop_london_low$population,pop_london_low$predicted_pop)*length(pop_london_low$population))/sum(pop_london_low$population)
+mae(pop_london_low$population,pop_london_low$predicted_pop)
+(mae(pop_london_low$population,pop_london_low$predicted_pop) * length(pop_london_low$population))/sum(pop_london_low$population)
+```
+
+
+#1 visualize predicted pop and the real one  
+```{r}
+
+plot(density(pop_london_low$population),col="black")+
+  lines(density(source_data_train$population),col="green")+
+lines(density(pop_london_low$predicted_pop),col="red")+
+lines(density(source_data_test_predict$predict),col= "blue")+
+lines(density(source_data_test$population),col = "purple")
+```
+
+#3. test different aggreagation methods 
+apply the restriction of moa 
+
+```{r}
+sb_transferred_predict = get(load("/home/z/*********/london/enriched_feature/moa2sbl/predicted_result_temp.Rdata"))
+sb_shape <- readOGR("/home/z/*********/london/enriched_feature/street_blocksl_withinloa.shp")
+sb_shape@data$sb_id = c(1:length(sb_shape@data$AREA))
+sbl_predicted_data = data.frame(pred_sbl_pop = sb_transferred_predict$predict,LSOA11CD=sb_shape@data$LSOA11CD, sb_id=sb_shape@data$sb_id)
+
+
+london_low <- readOGR("/home/z/*********/london/LSOA_2011_London_3857.shp")
+london_low_df = london_low@data[,c(1,3)]
+
+sbl_predicted_df_lm = merge(sbl_predicted_data,london_low_df, by= "LSOA11CD", all.x = TRUE)
+
+
+
+# aggreagte sb to moa
+sbl_predicted_df_lm_agg = sbl_predicted_df_lm %>%
+  group_by(MSOA11CD) %>% 
+  summarise(predicted_pop_sum_moa = sum(pred_sbl_pop))
+
+raw_pop_moa= get(load("/home/z/*********/london/Rspace/pop/raw_pop_mid_london.Rdata"))
+raw_pop_moa = raw_pop_moa[,c(1,3)]
+colnames(raw_pop_moa) = c("MSOA11CD","moa_true_population")
+summary(raw_pop_moa)
+
+sbl_predicted_df_lm_agg_temp = merge(sbl_predicted_df_lm_agg,raw_pop_moa,by = "MSOA11CD",all.x = TRUE)
+sbl_predicted_df_lm_agg_temp["ad_ratio"] = sbl_predicted_df_lm_agg_temp$moa_true_population/sbl_predicted_df_lm_agg_temp$predicted_pop_sum_moa
+# adjust by pop in moa
+sbl_predicted_df_adj = NULL
+sbl_predicted_df_adj = merge(sbl_predicted_df_lm,sbl_predicted_df_lm_agg_temp, by= "MSOA11CD", all.x = TRUE)
+
+sbl_predicted_df_adj$pred_adj_pop = sbl_predicted_df_adj$pred_sbl_pop * sbl_predicted_df_adj$ad_ratio
+
+temp_final = merge(sb_shape@data,sbl_predicted_df_adj[,c("pred_sbl_pop","pred_adj_pop","sb_id")],by="sb_id",all.x=TRUE)
+
+sb_shape@data=temp_final
+#writeOGR(sb_shape,dsn ="/home/z/*********/london/enriched_feature/moa2sbl",layer = "predicted_adj_sbl",driver = "ESRI Shapefile")
+```
+```{r}
+summary(sbl_predicted_df_adj$pred_adj_pop)
+plot(density(sbl_predicted_df_adj$pred_adj_pop))
+```
+
+# aggreagete to loa
+```{r}
+# aggreagete to loa
+sbl_predicted_df_adj_loa = sbl_predicted_df_adj %>% 
+  group_by(LSOA11CD) %>% 
+  summarise(pred_loa_pop = sum(pred_adj_pop))
+
+# merge with true pop in loa 
+raw_pop_loa= get(load("/home/z/*********/london/Rspace/pop/raw_pop_london_low.Rdata"))
+raw_pop_loa["LSOA11CD"] = raw_pop_loa$AreaCodes
+sbl_predicted_df_adj_loa = merge(sbl_predicted_df_adj_loa,raw_pop_loa, by= "LSOA11CD", all.x = TRUE)
+colnames(sbl_predicted_df_adj_loa)
+sbl_predicted_df_adj_loa = sbl_predicted_df_adj_loa[,c(1:5)]
+
+
+colnames(sbl_predicted_df_adj_loa)[5] = "loa_true_pop"
+sbl_predicted_df_adj_loa["residual"] = sbl_predicted_df_adj_loa$loa_true_pop-sbl_predicted_df_adj_loa$pred_loa_pop
+summary(sbl_predicted_df_adj_loa)
+
+london_low_shp = merge(sbl_predicted_df_adj_loa,london_low@data,by = "LSOA11CD",all.y= TRUE)
+london_low@data = london_low_shp
+#writeOGR(london_low,dsn ="/home/z/*********/london/enriched_feature/moa2sbl",layer = "sbl_predicted_adj_loa",driver = "ESRI Shapefile")
+```
+
+#3.  esitmate accuracy 
+```{r}
+predict_pop = sbl_predicted_df_adj_loa$pred_loa_pop
+real_pop =  sbl_predicted_df_adj_loa$loa_true_pop
+
+# rmse
+rmse(real_pop,predict_pop)
+
+# %rmse
+(rmse(real_pop,predict_pop)*length(real_pop))/sum(real_pop)
+
+#mae
+mae(real_pop,predict_pop)
+
+# %mae
+(mae(real_pop,predict_pop) * length(real_pop))/sum(real_pop)
+```
+#3 visualize predicted pop and the real one  
+```{r}
+
+plot(density(sbl_predicted_df_adj_loa$loa_true_pop),col="black")+
+lines(density(sbl_predicted_df_adj_loa$pred_loa_pop),col="red")
+```
+
+# plot the statistic residual
+```{r}
+plot(density(sbl_predicted_df_adj_loa$loa_true_pop-sbl_predicted_df_adj_loa$pred_loa_pop),col="black")
+```

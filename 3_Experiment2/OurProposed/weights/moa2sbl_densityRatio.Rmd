@@ -1,0 +1,80 @@
+---
+title: "moa2sbl_densityRatio"
+author: "********* yuan"
+date: "2019/10/29"
+output: html_document
+---
+
+
+```{r setup, results='hide', message=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("dplyr")
+library("h2o")
+library("rsample") 
+library("Metrics")
+library("densratio")
+library("rgdal")
+```
+
+# in this file, domain adaption will be test from moa2loa
+# load source and target data
+
+```{r}
+# load loa and moa
+target_data = get(load("/home/z/*********/london/enriched_feature/sbl_enriched_covariates.Rdata"))
+plot(density(target_data$B_NUMBER))
+colnames(target_data)
+source_data = get(load("/home/z/*********/london/enriched_feature/moa_enriched_covariates.Rdata"))
+plot(density(source_data$B_NUMBER))
+colnames(source_data)
+
+
+```
+
+# directly ratio esitimation 
+```{r}
+target_data$population = NULL
+target_data_dropPop = target_data
+target_data = NULL
+source_data$population = NULL
+source_data_dropPop = source_data
+source_data = NULL
+target_data_dropPop[is.na(target_data_dropPop)] <- 0
+source_data_dropPop[is.na(source_data_dropPop)] <- 0
+```
+
+```{r}
+summary(source_data_dropPop)
+summary(target_data_dropPop)
+```
+
+#
+```{r}
+densratio_obj_uLSIF <- densratio(source_data_dropPop,target_data_dropPop)
+
+density_ratio_uLSIF = densratio_obj_uLSIF$compute_density_ratio(source_data_dropPop)
+summary(density_ratio_uLSIF)
+plot(density(density_ratio_uLSIF))
+
+save(density_ratio_uLSIF,file = "/home/z/*********/london/enriched_feature/moa2sbl_weights_uLSIF.Rdata")
+```
+
+```{r}
+densratio_obj_KLIEP <- densratio(source_data_dropPop,target_data_dropPop,method = "KLIEP")
+
+density_ratio_KLIEP = densratio_obj_KLIEP$compute_density_ratio(source_data_dropPop)
+summary(density_ratio_KLIEP)
+plot(density(density_ratio_KLIEP))
+
+save(density_ratio_KLIEP,file = "/home/z/*********/london/enriched_feature/moa2sbl_weights_KLIEP.Rdata")
+```
+
+```{r}
+densratio_obj_RuLSIF <- densratio(source_data_dropPop,target_data_dropPop,method = "RuLSIF")
+
+density_ratio_RuLSIF = densratio_obj_RuLSIF$compute_density_ratio(source_data_dropPop)
+summary(density_ratio_RuLSIF)
+plot(density(density_ratio_RuLSIF))
+
+save(density_ratio_RuLSIF,file = "/home/z/*********/london/enriched_feature/moa2sbl_weights_RuLSIF.Rdata")
+```
