@@ -1,6 +1,6 @@
 ---
 title: "moa_enriched_XGboost"
-author: "************ yuan"
+author: "************"
 date: "2019/9/22"
 output: html_document
 ---

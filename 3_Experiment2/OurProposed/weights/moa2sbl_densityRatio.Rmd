@@ -1,6 +1,6 @@
 ---
 title: "moa2sbl_densityRatio"
-author: "********* yuan"
+author: "*********"
 date: "2019/10/29"
 output: html_document
 ---

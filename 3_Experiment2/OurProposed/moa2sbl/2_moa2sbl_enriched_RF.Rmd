@@ -1,6 +1,5 @@
 ---
 title: "2_moa2sbl_rf"
-author: "zhendong yuan"
 date: "2019/10/11"
 output: html_document
 ---

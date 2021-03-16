@@ -1,6 +1,5 @@
 ---
 title: "1_raw_pop"
-author: "******"
 date: "2019/9/10"
 output: html_document
 ---

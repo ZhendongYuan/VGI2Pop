@@ -1,6 +1,6 @@
 ---
 title: "plotpaperfigure"
-author: "********* yuan"
+author: "*********"
 date: "2019/11/17"
 output: html_document
 ---

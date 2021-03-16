@@ -1,6 +1,6 @@
 ---
 title: "moa2loa_enriched_adaptation_XGboost_RuLSIF"
-author: "********* yuan"
+author: "*********"
 date: "2019/10/12"
 output: html_document
 ---

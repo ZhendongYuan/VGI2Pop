@@ -1,6 +1,6 @@
 ---
 title: "enriched_moa2sbl_RuLSIF"
-author: "********* yuan"
+author: "*********"
 date: "2019/10/12"
 output: html_document
 ---

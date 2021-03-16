@@ -1,6 +1,6 @@
 ---
 title: "moa2loa_enriched_adaptation"
-author: "******** yuan"
+author: "********"
 date: "2019/9/21"
 output: html_document
 ---
