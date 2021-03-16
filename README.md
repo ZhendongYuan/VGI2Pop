@@ -35,8 +35,8 @@ Experiment 2:
 This folder contains the implementation of VGI2Pop and two traditional models as comparisons (multi-class dasymetric mapping method and the random forest method based on land use and land cover data). 
 
 ## Involved data in case study area (Greater London)
-1. Population excel download from national statistic office located at /1_Preprocessing/raw_input_data;
-2. Shapefiles for LSOA and MSOA located at /1_Preprocessing/raw_input_data;
+1. Population excel download from national statistic office located at /raw_input_data;
+2. Shapefiles for LSOA and MSOA located at /raw_input_data;
 3. OSM data downloaded from OHSOME API (raw data is not contained but but you can freely download from https://heigit.org/big-spatial-data-analytics-en/ohsome/); 
 4. Twitter data downloaded from Twitter API (raw data is not contained but you can freely download from https://developer.twitter.com/en/docs/twitter-api); 
 5. Urban Atlas (raw data is not contained but you can freely download from https://land.copernicus.eu/local/urban-atlas). 
