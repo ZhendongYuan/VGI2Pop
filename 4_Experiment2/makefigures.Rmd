@@ -103,7 +103,6 @@ tm_shape(ULB_sbl_2_loa) + tm_bubbles(size = "residul_p",col = "residul_p", break
 ```
 
 
-#############  NEED TO spend time here.
 ## result from the multi-class 
 #read dataset sbl
 ```{r}
