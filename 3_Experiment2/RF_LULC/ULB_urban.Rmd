@@ -1,5 +1,5 @@
 ---
-title: "urbanaltlas_ULB"
+title: "ULB_urban_2"
 author: "********"
 date: "2019/11/11"
 output: html_document
@@ -9,7 +9,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library("reshape2")
 library("BBmisc")
+library("densratio")
 library("h2o")
+library("rsample")
+
 library("rgdal")
 library("sp")
 library("dplyr")
@@ -42,7 +45,7 @@ colnames(moa_data)
 ```{r}
 #h2o.shutdown(prompt = TRUE)
 h2o.no_progress()
-h2o.init(max_mem_size = "20g")
+h2o.init(max_mem_size = "10g")
 # Create training (70%) and test (30%) sets for the AmesHousing::make_ames() data.
 # Use set.seed for reproducibility
 #set.seed(123)
@@ -206,8 +209,7 @@ summary(sb_transferred_predict$predict)
 
 # directly implement the model trained on moa to predict on sbl 
 
-#3. test different aggreagation methods 
-apply the restriction of moa 
+# by the constraints of population sum.
 
 ```{r}
 
@@ -223,42 +225,40 @@ london_low_df = london_low@data[,c(1,3)]
 
 sbl_predicted_df_lm = merge(sbl_predicted_data_df,london_low_df, by= "LSOA11CD", all.x = TRUE)
 
+# by the sum of numbers
+moa_or_data= get(load("/home/z/********/london/Rspace/moa_data.Rdata"))
+sum_or_pop = sum(moa_or_data$population)
+print("sum true pop")
+sum_or_pop
+sum_sb_transferred_predict = sum(sbl_predicted_df_lm$pred_sbl_pop)
+rough_ratio_red = sum_or_pop/sum_sb_transferred_predict
+# ratio transferred
+print("ratio transferred")
+rough_ratio_red
+
+sbl_predicted_df_lm$pred_sbl_pop = sbl_predicted_df_lm$pred_sbl_pop*rough_ratio_red
+print("sum up descaled sb predicted pop")
+sum(sbl_predicted_df_lm$pred_sbl_pop)
 
 
-# aggreagte sb to moa
-sbl_predicted_df_lm_agg = sbl_predicted_df_lm %>%
-  group_by(MSOA11CD) %>% 
-  summarise(predicted_pop_sum_moa = sum(pred_sbl_pop))
 
-raw_pop_moa= get(load("/home/z/********/london/Rspace/pop/raw_pop_mid_london.Rdata"))
-raw_pop_moa = raw_pop_moa[,c(1,3)]
-colnames(raw_pop_moa) = c("MSOA11CD","moa_true_population")
-summary(raw_pop_moa)
-
-sbl_predicted_df_lm_agg_temp = merge(sbl_predicted_df_lm_agg,raw_pop_moa,by = "MSOA11CD",all.x = TRUE)
-sbl_predicted_df_lm_agg_temp["ad_ratio"] = sbl_predicted_df_lm_agg_temp$moa_true_population/sbl_predicted_df_lm_agg_temp$predicted_pop_sum_moa
-# adjust by pop in moa
-sbl_predicted_df_adj = NULL
-sbl_predicted_df_adj = merge(sbl_predicted_df_lm,sbl_predicted_df_lm_agg_temp, by= "MSOA11CD", all.x = TRUE)
-
-sbl_predicted_df_adj$pred_adj_pop = sbl_predicted_df_adj$pred_sbl_pop * sbl_predicted_df_adj$ad_ratio
-
-temp_final = merge(sb_shape@data,sbl_predicted_df_adj[,c("pred_sbl_pop","pred_adj_pop","sb_id")],by.x = "SBL_ID",by.y="sb_id",all.x=TRUE)
+temp_final = merge(sb_shape@data,sbl_predicted_df_lm[,c("pred_sbl_pop","sb_id")],by.x = "SBL_ID",by.y="sb_id",all.x=TRUE)
 
 sb_shape@data=temp_final
-writeOGR(sb_shape,dsn ="/home/z/********/london/ULB_ATLAS",layer = "predicted_adj_sbl",driver = "ESRI Shapefile")
+#writeOGR(sb_shape,dsn ="/home/z/********/london/ULB_ATLAS",layer = "predicted_adj_sbl_2",driver = "ESRI Shapefile")
+save(sb_shape, file="/home/z/********/london/ULB_ATLAS/predicted_adj_sbl_2.Rdata")
 ```
 ```{r}
-summary(sbl_predicted_df_adj$pred_adj_pop)
-plot(density(sbl_predicted_df_adj$pred_adj_pop))
+summary(sbl_predicted_df_lm$pred_adj_pop)
+plot(density(sbl_predicted_df_lm$pred_sbl_pop))
 ```
 
 # aggreagete to loa and output the aggregated value on loa and the spatial residual
 ```{r}
 # aggreagete to loa
-sbl_predicted_df_adj_loa = sbl_predicted_df_adj %>% 
+sbl_predicted_df_adj_loa = sbl_predicted_df_lm %>% 
   group_by(LSOA11CD) %>% 
-  summarise(pred_loa_pop = sum(pred_adj_pop))
+  summarise(pred_loa_pop = sum(pred_sbl_pop))
 
 # merge with true pop in loa 
 raw_pop_loa= get(load("/home/z/********/london/Rspace/pop/raw_pop_london_low.Rdata"))
@@ -274,7 +274,7 @@ summary(sbl_predicted_df_adj_loa)
 
 london_low_shp = merge(sbl_predicted_df_adj_loa,london_low@data,by = "LSOA11CD",all.y= TRUE)
 london_low@data = london_low_shp
-writeOGR(london_low,dsn ="/home/z/********/london/ULB_ATLAS",layer = "predicted_adj_sbl_loa",driver = "ESRI Shapefile")
+#writeOGR(london_low,dsn ="/home/z/********/london/ULB_ATLAS",layer = "predicted_adj_sbl_loa_2",driver = "ESRI Shapefile")
 ```
 
 #3.  esitmate accuracy 
@@ -305,5 +305,6 @@ lines(density(sbl_predicted_df_adj_loa$pred_loa_pop),col="red")
 ```{r}
 plot(density(sbl_predicted_df_adj_loa$loa_true_pop-sbl_predicted_df_adj_loa$pred_loa_pop),col="black")
 ```
+
 
 
