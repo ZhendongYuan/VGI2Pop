@@ -37,8 +37,8 @@ This folder contains the implementation of VGI2Pop and two traditional models as
 ## Involved data in case study area (Greater London)
 1. population excel download from national statistic office;
 2. Shapefile for LSOA and MSOA;
-3. OSM data downloaded from OHSOME API (raw data is not contained but the collecting code is available); 
-4. Twitter data downloaded from Twitter API (raw data is not contained but the collecting code is available); 
+3. OSM data downloaded from OHSOME API (raw data is not contained but but you can freely download from https://heigit.org/big-spatial-data-analytics-en/ohsome/); 
+4. Twitter data downloaded from Twitter API (raw data is not contained but you can freely download from https://developer.twitter.com/en/docs/twitter-api); 
 5. Urban Atlas (raw data is not contained but you can freely download from https://land.copernicus.eu/local/urban-atlas). 
 
 
