@@ -1,4 +1,4 @@
-## Experiment 1 Scale effect in dasymetric mapping
+## Experiment 1: Scale effect in dasymetric mapping
 
 In this experiment, we compared the performance of machine learning based dasymetric mapping with and without considering scale effect. 
 The result shows that the scale effect affected prediction accuracy and our proposed adaptation can reduce it 
