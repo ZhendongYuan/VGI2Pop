@@ -15,7 +15,7 @@ library("ggplot2")
 moa2loa_Xgboost_direct = NULL
 for (i in c(1:50))
 { 
-  moa2loa_Xgboost_direct = rbind(moa2loa_Xgboost_direct,get(load(paste("/home/z/zhendong/london/enriched_feature/moa2loa_xgboost_CV/",i,"_moa2loa_Xgboost.Rdata",sep = ""))))
+  moa2loa_Xgboost_direct = rbind(moa2loa_Xgboost_direct,get(load(paste("/home/z/*********/london/enriched_feature/moa2loa_xgboost_CV/",i,"_moa2loa_Xgboost.Rdata",sep = ""))))
 }
 
 summary(moa2loa_Xgboost_direct)
@@ -26,7 +26,7 @@ summary(moa2loa_Xgboost_direct)
 moa2loa_Xgboost_uLSIF = NULL
 for (i in c(1:50))
 { 
-  moa2loa_Xgboost_uLSIF = rbind(moa2loa_Xgboost_uLSIF,get(load(paste("/home/z/zhendong/london/enriched_feature/moa2loa_xgboost_CV/uLSIF/",i,"_moa2loa_Xgboost_uLSIF.Rdata",sep = ""))))
+  moa2loa_Xgboost_uLSIF = rbind(moa2loa_Xgboost_uLSIF,get(load(paste("/home/z/*********/london/enriched_feature/moa2loa_xgboost_CV/uLSIF/",i,"_moa2loa_Xgboost_uLSIF.Rdata",sep = ""))))
 }
 
 summary(moa2loa_Xgboost_uLSIF)
@@ -38,7 +38,7 @@ summary(moa2loa_Xgboost_uLSIF)
 moa2loa_Xgboost_RuLSIF = NULL
 for (i in c(1:50))
 { 
-  moa2loa_Xgboost_RuLSIF = rbind(moa2loa_Xgboost_RuLSIF,get(load(paste("/home/z/zhendong/london/enriched_feature/moa2loa_xgboost_CV/RuLSIF/",i,"_moa2loa_Xgboost_RuLSIF.Rdata",sep = ""))))
+  moa2loa_Xgboost_RuLSIF = rbind(moa2loa_Xgboost_RuLSIF,get(load(paste("/home/z/*********/london/enriched_feature/moa2loa_xgboost_CV/RuLSIF/",i,"_moa2loa_Xgboost_RuLSIF.Rdata",sep = ""))))
 }
 summary(moa2loa_Xgboost_RuLSIF)
 ```
@@ -49,16 +49,16 @@ summary(moa2loa_Xgboost_RuLSIF)
 moa2loa_Xgboost_KLIEP = NULL
 for (i in c(1:50))
 { 
-  moa2loa_Xgboost_KLIEP = rbind(moa2loa_Xgboost_KLIEP,get(load(paste("/home/z/zhendong/london/enriched_feature/moa2loa_xgboost_CV/KLIEP/",i,"_moa2loa_Xgboost_KLIEP.Rdata",sep = ""))))
+  moa2loa_Xgboost_KLIEP = rbind(moa2loa_Xgboost_KLIEP,get(load(paste("/home/z/*********/london/enriched_feature/moa2loa_xgboost_CV/KLIEP/",i,"_moa2loa_Xgboost_KLIEP.Rdata",sep = ""))))
 }
 summary(moa2loa_Xgboost_KLIEP)
 ```
 # store the data
 ```{r}
-save(moa2loa_Xgboost_direct,file="/home/z/zhendong/london/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_direct.Rdata")
-save(moa2loa_Xgboost_uLSIF,file="/home/z/zhendong/london/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_uLSIF.Rdata")
-save(moa2loa_Xgboost_RuLSIF,file="/home/z/zhendong/london/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_RuLSIF.Rdata")
-save(moa2loa_Xgboost_KLIEP,file="/home/z/zhendong/london/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_KLIEP.Rdata")
+save(moa2loa_Xgboost_direct,file="/home/z/*********/london/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_direct.Rdata")
+save(moa2loa_Xgboost_uLSIF,file="/home/z/*********/london/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_uLSIF.Rdata")
+save(moa2loa_Xgboost_RuLSIF,file="/home/z/*********/london/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_RuLSIF.Rdata")
+save(moa2loa_Xgboost_KLIEP,file="/home/z/*********/london/enriched_feature/moa2loa_xgboost_CV/moa2loa_Xgboost_KLIEP.Rdata")
 ```
 
 # visualize in boxplot 

@@ -16,7 +16,6 @@ moa_or_data= get(load("D:/londonPop/enriched_feature/raw_pop_mid_london.Rdata"))
 loa_or_data= get(load("D:/londonPop/enriched_feature/raw_pop_london_low.Rdata"))
 sum_or_pop = sum(moa_or_data$population)
 
-
 for (i in c(1:50))
 {
   model <- keras_model_sequential() %>%

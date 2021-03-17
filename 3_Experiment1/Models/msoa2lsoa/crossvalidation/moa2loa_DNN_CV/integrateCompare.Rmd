@@ -1,6 +1,6 @@
 ---
 title: "integrateCompare"
-author: "Zhendong Yuan"
+author: "******"
 date: "2019/11/1"
 output: html_document
 ---
